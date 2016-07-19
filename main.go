@@ -31,7 +31,8 @@ func setUpIRCConnection(ircBot *ircBot) {
 	ircConn.TLSConfig = &tls.Config{
 		ServerName: ircBot.Host,
 	}
-	ircConn.VerboseCallbackHandler(ircBot.Debug)
+
+	ircConn.VerboseCallbackHandler = ircBot.Debug
 
 }
 
