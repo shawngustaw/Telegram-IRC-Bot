@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
+	//"crypto/tls"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/thoj/go-ircevent"
 	"log"
@@ -27,16 +27,28 @@ var ircConn *irc.Connection
 func setUpIRCConnection(ircBot *ircBot) {
 	ircConn = irc.IRC(ircBot.Username, ircBot.Nickname)
 	ircConn.Password = ircBot.Password
-	ircConn.UseTLS = ircBot.UseTLS
-	ircConn.TLSConfig = &tls.Config{
-		ServerName: ircBot.Host,
-	}
+	//ircConn.UseTLS = ircBot.UseTLS
+	//ircConn.TLSConfig = &tls.Config{
+	//	ServerName: ircBot.Host,
+	//}
 
 	ircConn.VerboseCallbackHandler = ircBot.Debug
 
 }
 
+func onWelcome(e *irc.Event) {
+	ircConn.Join("#tag")
+}
+
 func main() {
+	ircConn = irc.IRC("Abot", "Abot")
+	ircConn.VerboseCallbackHandler = true
+
+	ircConn.Connect("irc.oftc.net:6667")
+	ircConn.AddCallback("001", onWelcome)
+	ircConn.Loop()
+
+	return
 	TOKEN := ""
 
 	bot, error := tgbotapi.NewBotAPI(TOKEN)
