@@ -2,9 +2,11 @@ package main
 
 import (
 	//"crypto/tls"
+	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/thoj/go-ircevent"
 	"log"
+	"time"
 )
 
 type ircBot struct {
@@ -22,41 +24,89 @@ type telegramBot struct {
 	Token string
 }
 
-var ircConn *irc.Connection
+type message struct {
+	Sender string
+	Text   string
+	Sent   time.Time
+}
 
-func setUpIRCConnection(ircBot *ircBot) {
-	ircConn = irc.IRC(ircBot.Username, ircBot.Nickname)
-	ircConn.Password = ircBot.Password
+var ircConn *irc.Connection
+var BotAPI *tgbotapi.BotAPI
+
+func onWelcome(event *irc.Event) {
+	ircConn.Join("#tag")
+	time.Sleep(100 * time.Millisecond)
+
+	ircConn.SendRawf("%s %s :%s", "PRIVMSG", "#tag", "TorontoCryptoBot has joined the channel.")
+}
+
+func onPrivateMessage(event *irc.Event) {
+	go func(event *irc.Event) {
+		fmt.Print("\n\n\n\n\n")
+		fmt.Print("\n\n\n\n\n")
+
+		fmt.Print(event.Nick) // contains the sender
+
+		fmt.Print("\n\n\n\n\n")
+
+		fmt.Print(event.Message()) //contains the message
+
+		fmt.Print("\n\n\n\n\n")
+
+		fmt.Print(event.Arguments[0]) // contains the channel
+
+		fmt.Print("\n\n\n\n\n")
+		fmt.Print("\n\n\n\n\n")
+		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+
+		//BotAPI.Send(msg)
+	}(event)
+
+}
+
+func setUpIRCConnection() <-chan message {
+	channel := make(chan message)
+
+	go func() {
+		ircConn = irc.IRC("Abot", "Abot")
+		ircConn.VerboseCallbackHandler = true
+
+		ircConn.Connect("irc.oftc.net:6667")
+
+		ircConn.AddCallback("001", onWelcome)
+		ircConn.AddCallback("PRIVMSG", onPrivateMessage)
+
+		ircConn.Loop()
+	}()
+
 	//ircConn.UseTLS = ircBot.UseTLS
 	//ircConn.TLSConfig = &tls.Config{
 	//	ServerName: ircBot.Host,
 	//}
 
 	ircConn.VerboseCallbackHandler = ircBot.Debug
+	return channel
 
-}
-
-func onWelcome(e *irc.Event) {
-	ircConn.Join("#tag")
 }
 
 func main() {
-	ircConn = irc.IRC("Abot", "Abot")
-	ircConn.VerboseCallbackHandler = true
+	setUpIRCConnection()
 
-	ircConn.Connect("irc.oftc.net:6667")
-	ircConn.AddCallback("001", onWelcome)
-	ircConn.Loop()
+	x := 0
 
-	return
-	TOKEN := ""
-
-	bot, error := tgbotapi.NewBotAPI(TOKEN)
-
-	if error != nil {
-		log.Panic(error)
+	for {
+		x += 0
 	}
 
+	return // BEGIN TELEGRAM CODE BELOW
+
+	TOKEN := ""
+
+	bot, e := tgbotapi.NewBotAPI(TOKEN)
+
+	if e != nil {
+		log.Panic(e)
+	}
 	bot.Debug = true
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -78,10 +128,10 @@ func main() {
 
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-		// msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		// msg.ReplyToMessageID = update.Message.MessageID
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+		msg.ReplyToMessageID = update.Message.MessageID
 
-		// bot.Send(msg)
+		bot.Send(msg)
 	}
 
 }
