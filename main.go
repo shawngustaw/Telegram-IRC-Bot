@@ -72,12 +72,13 @@ func setUpTelegramConnection(
 	ircWriteChannel chan string) {
 
 	go func() {
-		fmt.Print("\n\n\n")
+		fmt.Print("\n\n")
 		fmt.Print("SETTING UP THE TELEGRAM CONNECTION")
-		fmt.Print("\n\n\n")
 
 		TOKEN := ""
 		bot, e := tgbotapi.NewBotAPI(TOKEN)
+
+		fmt.Print("Bot authenticated attempted")
 
 		if e != nil {
 			log.Panic(e)
@@ -87,6 +88,7 @@ func setUpTelegramConnection(
 
 		log.Printf("Authorized on account %s", bot.Self.UserName)
 
+		fmt.Print("Getting new updates from telegram")
 		u := tgbotapi.NewUpdate(0)
 
 		u.Timeout = 60
@@ -100,10 +102,10 @@ func setUpTelegramConnection(
 		// read from channel
 		go func() {
 			for {
-				fmt.Print("Writing to Telegram channel")
+				fmt.Print("READing Telegram channel")
 				message := <-writeChannel
 				fmt.Print(message)
-				msg := tgbotapi.NewMessage(1, message)
+				msg := tgbotapi.NewMessage(-122277940, message)
 				bot.Send(msg)
 
 			}
@@ -114,17 +116,18 @@ func setUpTelegramConnection(
 				continue
 			}
 
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			log.Printf("[%s] %s %s", update.Message.From.UserName, update.Message.Text, update.Message.Chat.ID)
 
 			go func() {
 				fmt.Print("Writing to IRC Channel")
-				ircWriteChannel <- update.Message.Text
+				message := fmt.Sprintf("[%s]: %s", update.Message.From.UserName, update.Message.Text)
+				ircReadChannel <- message
 			}()
 
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
+			//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+			//msg.ReplyToMessageID = update.Message.MessageID
 
-			bot.Send(msg)
+			//bot.Send(msg)
 		}
 
 	}()
@@ -175,14 +178,18 @@ func setUpIRCConnection(
 			fmt.Print("Reading from IRC channel")
 			message := <-readChannel
 			fmt.Print(message)
+			ircConn.SendRawf("%s %s :%s", "PRIVMSG", "#tag", message)
 
 		}
 	}()
 
 	fmt.Print("Entering the infinite loop for irc events")
 	fmt.Print("\n\n\n\n")
+	time.Sleep(100 * time.Millisecond)
 
-	ircConn.Loop()
+	go func() {
+		ircConn.Loop()
+	}()
 
 	//ircConn.UseTLS = ircBot.UseTLS
 	//ircConn.TLSConfig = &tls.Config{
@@ -194,58 +201,18 @@ func setUpIRCConnection(
 }
 
 func main() {
-	//	telegramChannel := setUpTelegram()  // TODO: create this channel, pass it to IRC connection
 	ircWriteChannel := make(chan string)
 	ircReadChannel := make(chan string)
 	telegramWriteChannel := make(chan string)
 	telegramReadChannel := make(chan string)
 
-	go func() {
-		setUpIRCConnection(ircReadChannel, ircWriteChannel, telegramReadChannel, telegramWriteChannel)
-	}()
-
-	go func() {
-		setUpTelegramConnection(telegramReadChannel, telegramWriteChannel, ircReadChannel, ircWriteChannel)
-	}()
+	setUpTelegramConnection(telegramReadChannel, telegramWriteChannel, ircReadChannel, ircWriteChannel)
+	setUpIRCConnection(ircReadChannel, ircWriteChannel, telegramReadChannel, telegramWriteChannel)
 
 	for {
 		// keep main program running
 	}
 
 	return // BEGIN TELEGRAM CODE BELOW
-
-	TOKEN := ""
-
-	bot, e := tgbotapi.NewBotAPI(TOKEN)
-
-	if e != nil {
-		log.Panic(e)
-	}
-	bot.Debug = true
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-
-	u.Timeout = 60
-
-	updates, error := bot.GetUpdatesChan(u)
-
-	if error != nil {
-		log.Panic(error)
-	}
-
-	for update := range updates {
-		if update.Message == nil {
-			continue
-		}
-
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		msg.ReplyToMessageID = update.Message.MessageID
-
-		bot.Send(msg)
-	}
 
 }
