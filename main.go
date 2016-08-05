@@ -7,6 +7,7 @@ import (
 	"github.com/thoj/go-ircevent"
 	"log"
 	"time"
+	"os"
 )
 
 type ircBot struct {
@@ -76,6 +77,12 @@ func setUpTelegramConnection(
 		fmt.Print("SETTING UP THE TELEGRAM CONNECTION")
 
 		TOKEN := ""
+
+		if TOKEN == "" {
+			fmt.Print("Telegram Token not set. Exiting.")
+			os.Exit(1)
+		}
+
 		bot, e := tgbotapi.NewBotAPI(TOKEN)
 
 		fmt.Print("Bot authenticated attempted")
