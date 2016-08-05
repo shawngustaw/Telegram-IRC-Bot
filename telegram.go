@@ -4,61 +4,74 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
-	"os"
 )
 
 type telegramBot struct {
-	Token string
+	Token        string
+	Bot          *tgbotapi.BotAPI
+	Debug        bool
+	ReadChannel  chan string
+	WriteChannel chan string
 }
 
-func setUpTelegramConnection(readChannel chan string, writeChannel chan string) {
+func newTelegramBot(
+	Token string,
+	Debug bool,
+	ReadChannel chan string,
+	WriteChannel chan string) *telegramBot {
 
+	return &telegramBot{
+		Token:        Token,
+		Debug:        Debug,
+		ReadChannel:  ReadChannel,
+		WriteChannel: WriteChannel,
+	}
+}
+
+func (self *telegramBot) initConnection() {
+	bot, e := tgbotapi.NewBotAPI(self.Token)
+
+	if e != nil {
+		log.Panic(e)
+	}
+
+	self.Bot = bot
+	self.Bot.Debug = self.Debug
+
+	fmt.Printf("Authorized on account %s", bot.Self.UserName)
+
+	self.initReadLoop()
+	fmt.Print("ASDFASDF")
+
+}
+
+func (self *telegramBot) initReadLoop() {
 	go func() {
-		fmt.Print("\n\n")
-		fmt.Print("SETTING UP THE TELEGRAM CONNECTION")
+		for {
+			fmt.Println("Reading Telegram channel")
+			message := <-self.ReadChannel
+			fmt.Println("IRC Message was read. Sending")
+			fmt.Println(message)
+			// TODO: don't hardcode group ID
+			msg := tgbotapi.NewMessage(-122277940, message)
+			self.Bot.Send(msg)
 
-		TOKEN := "220802676:AAESVYAwKZipv-D7B8i8LHsAtO-fcn2b2Q4"
-
-		if TOKEN == "" {
-			fmt.Print("Telegram Token not set. Exiting.")
-			os.Exit(1)
 		}
+	}()
+}
 
-		bot, e := tgbotapi.NewBotAPI(TOKEN)
-
-		fmt.Print("Bot authenticated attempted")
-
-		if e != nil {
-			log.Panic(e)
-		}
-
-		bot.Debug = true
-
-		log.Printf("Authorized on account %s", bot.Self.UserName)
-
+func (self *telegramBot) beginLoop() {
+	go func() {
 		fmt.Println("Getting new updates from telegram")
 		u := tgbotapi.NewUpdate(0)
 
 		u.Timeout = 60
 
-		updates, error := bot.GetUpdatesChan(u)
+		updates, error := self.Bot.GetUpdatesChan(u)
 
 		if error != nil {
 			log.Panic(error)
 		}
-
-		// read from channel
-		go func() {
-			for {
-				fmt.Println("READing Telegram channel")
-				message := <-readChannel
-				fmt.Println("MEssage was written")
-				fmt.Println(message)
-				msg := tgbotapi.NewMessage(-122277940, message)
-				bot.Send(msg)
-
-			}
-		}()
 
 		for update := range updates {
 			if update.Message == nil {
@@ -70,7 +83,7 @@ func setUpTelegramConnection(readChannel chan string, writeChannel chan string) 
 			go func() {
 				fmt.Println("Writing to IRC Channel")
 				message := fmt.Sprintf("[%s]: %s", update.Message.From.UserName, update.Message.Text)
-				writeChannel <- message
+				self.WriteChannel <- message
 			}()
 
 			//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
@@ -78,7 +91,6 @@ func setUpTelegramConnection(readChannel chan string, writeChannel chan string) 
 
 			//bot.Send(msg)
 		}
-
 	}()
 
 }

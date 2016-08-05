@@ -2,8 +2,8 @@ package main
 
 import (
 	//"crypto/tls"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/thoj/go-ircevent"
+	"fmt"
+	"os"
 	"time"
 )
 
@@ -13,8 +13,16 @@ type message struct {
 	Sent   time.Time
 }
 
-var ircConn *irc.Connection
-var BotAPI *tgbotapi.BotAPI
+func getToken() string {
+	token := os.Getenv("TELEGRAM_TOKEN")
+
+	if token == "" {
+		fmt.Errorf("Telegram Token not set. Exiting.")
+		os.Exit(1)
+	}
+
+	return token
+}
 
 func main() {
 	// Telegram reads, IRC writes
@@ -22,7 +30,12 @@ func main() {
 	// IRC reads, Telegram writes
 	pong := make(chan string)
 
-	setUpTelegramConnection(ping, pong)
+	TOKEN := getToken()
+
+	Telegram := newTelegramBot(TOKEN, true, ping, pong)
+	Telegram.initConnection()
+	Telegram.beginLoop()
+
 	IRC := newIRCBot(
 		"Abot", "Abot", "irc.oftc.net", 6667, "#tag",
 		true, pong, ping)
@@ -33,6 +46,6 @@ func main() {
 		// keep main program running
 	}
 
-	return // BEGIN TELEGRAM CODE BELOW
+	return
 
 }
