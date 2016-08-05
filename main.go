@@ -13,15 +13,24 @@ type message struct {
 	Sent   time.Time
 }
 
-func getToken() string {
-	token := os.Getenv("TELEGRAM_TOKEN")
+func getEnvVariable(name string) string {
+	token := os.Getenv(name)
 
 	if token == "" {
-		fmt.Errorf("Telegram Token not set. Exiting.")
+		fmt.Printf("%s Token not set. Exiting.", name)
 		os.Exit(1)
 	}
 
 	return token
+
+}
+
+func getTelegramToken() string {
+	return getEnvVariable("TELEGRAM_TOKEN")
+}
+
+func getLCBToken() string {
+	return getEnvVariable("LCB_TOKEN")
 }
 
 func main() {
@@ -30,17 +39,41 @@ func main() {
 	// IRC reads, Telegram writes
 	pong := make(chan string)
 
-	TOKEN := getToken()
+	TelegramToken := getTelegramToken()
 
-	Telegram := newTelegramBot(TOKEN, true, ping, pong)
+	Telegram := newTelegramBot(
+		TelegramToken,
+		true,
+		ping,
+		pong)
 	Telegram.initConnection()
 	Telegram.beginLoop()
 
-	IRC := newIRCBot(
-		"Abot", "Abot", "irc.oftc.net", 6667, "#tag",
-		true, pong, ping)
-	IRC.initConnection()
-	IRC.beginLoop()
+	LCBToken := getLCBToken()
+	DevelopmentRoom := "5047c30359e957b86a000001"
+
+	LetsChat := newLetsChatBot(
+		LCBToken,
+		"cairo.sdelements.com",
+		DevelopmentRoom,
+		pong,
+		ping)
+
+	LetsChat.beginLoop()
+
+	/*
+		IRC := newIRCBot(
+			"Abot",
+			"Abot",
+			"irc.oftc.net",
+			 6667,
+			 "#tag",
+			true,
+			 pong,
+			  ping)
+		IRC.initConnection()
+		IRC.beginLoop()
+	*/
 
 	for {
 		// keep main program running

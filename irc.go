@@ -86,6 +86,7 @@ func (self *ircBot) initCallbacks() {
 		go func() {
 			fmt.Print("\n\n\n")
 			fmt.Print("WRITING TO TELEGRAM CHANNEL")
+
 			self.WriteChannel <- event.Message()
 		}()
 

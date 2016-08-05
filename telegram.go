@@ -41,7 +41,6 @@ func (self *telegramBot) initConnection() {
 	fmt.Printf("Authorized on account %s", bot.Self.UserName)
 
 	self.initReadLoop()
-	fmt.Print("ASDFASDF")
 
 }
 
