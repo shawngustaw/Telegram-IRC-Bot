@@ -45,6 +45,7 @@ func newIRCBot(
 
 func (self *ircBot) initConnection() {
 	fmt.Println("Setting up the IRC Connection")
+
 	self.IRCConn = irc.IRC(self.Nickname, self.Username)
 	self.IRCConn.VerboseCallbackHandler = self.Debug
 	self.IRCConn.Connect(fmt.Sprintf("%s:%d", self.Host, self.Port))
@@ -67,18 +68,20 @@ func (self *ircBot) initConnection() {
 
 func (self *ircBot) initCallbacks() {
 	fmt.Println("Setting up the callbacks")
+
 	// Joining channel
 	self.IRCConn.AddCallback("001", func(e *irc.Event) {
-
 		self.IRCConn.Join(self.IRCChannel)
 		time.Sleep(3000 * time.Millisecond)
 
-		self.IRCConn.SendRawf("%s %s :%s", "PRIVMSG", "#tag", "TorontoCryptoBot has joined the channel.")
+		self.IRCConn.SendRawf("%s %s :%s", "PRIVMSG", "#tag",
+			"TorontoCryptoBot has joined the channel.")
 		return
 	})
 
 	// Private message
 	self.IRCConn.AddCallback("PRIVMSG", func(event *irc.Event) {
+
 		fmt.Print(event.Nick)         // contains the sender
 		fmt.Print(event.Message())    //contains the message
 		fmt.Print(event.Arguments[0]) // contains the channel
@@ -91,12 +94,13 @@ func (self *ircBot) initCallbacks() {
 		}()
 
 	})
+
 	fmt.Println("Done setting up callbacks.")
 
 }
 
 func (self *ircBot) beginLoop() {
-	time.Sleep(15000 * time.Millisecond)
+	//time.Sleep(15000 * time.Millisecond)
 	fmt.Println("Beginning the loop")
 
 	go func() {

@@ -29,10 +29,6 @@ func getTelegramToken() string {
 	return getEnvVariable("TELEGRAM_TOKEN")
 }
 
-func getLCBToken() string {
-	return getEnvVariable("LCB_TOKEN")
-}
-
 func main() {
 	// Telegram reads, IRC writes
 	ping := make(chan string)
@@ -41,39 +37,17 @@ func main() {
 
 	TelegramToken := getTelegramToken()
 
-	Telegram := newTelegramBot(
-		TelegramToken,
-		true,
-		ping,
-		pong)
+	Telegram := newTelegramBot(TelegramToken, true,
+		ping, pong)
 	Telegram.initConnection()
 	Telegram.beginLoop()
 
-	LCBToken := getLCBToken()
-	DevelopmentRoom := "5047c30359e957b86a000001"
+	IRC := newIRCBot("Abot", "Abot",
+		"irc.oftc.net", 6667, "#tag",
+		true, pong, ping)
 
-	LetsChat := newLetsChatBot(
-		LCBToken,
-		"cairo.sdelements.com",
-		DevelopmentRoom,
-		pong,
-		ping)
-
-	LetsChat.beginLoop()
-
-	/*
-		IRC := newIRCBot(
-			"Abot",
-			"Abot",
-			"irc.oftc.net",
-			 6667,
-			 "#tag",
-			true,
-			 pong,
-			  ping)
-		IRC.initConnection()
-		IRC.beginLoop()
-	*/
+	IRC.initConnection()
+	IRC.beginLoop()
 
 	for {
 		// keep main program running

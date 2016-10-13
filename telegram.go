@@ -49,11 +49,21 @@ func (self *telegramBot) initReadLoop() {
 		for {
 			fmt.Println("Reading Telegram channel")
 			message := <-self.ReadChannel
-			fmt.Println("IRC Message was read. Sending")
+			fmt.Println("Message was read in Telegram. Sending")
 			fmt.Println(message)
 			// TODO: don't hardcode group ID
-			msg := tgbotapi.NewMessage(-122277940, message)
-			self.Bot.Send(msg)
+			go func(message string) {
+				msg := tgbotapi.NewMessage(-122277940, message)
+				sent, err := self.Bot.Send(msg)
+
+				if err != nil {
+					fmt.Println("Something bad happened:")
+					fmt.Println(sent, err)
+				}
+				fmt.Println("looks like it sent To telegram")
+				fmt.Println(sent, err)
+
+			}(message)
 
 		}
 	}()
